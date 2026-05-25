@@ -1,4 +1,8 @@
 #include "lox.h"
+#include "scanner.h"
+#include "token.h"
+
+#include <vector>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -35,7 +39,14 @@ void Lox::runPrompt() {
   }
 }
 
-void Lox::run(std::string_view source) { std::cout << source << '\n'; }
+void Lox::run(std::string_view source) {
+  Scanner scanner{source};
+  std::vector<Token> tokens = scanner.scanTokens();
+
+  for (Token &token : tokens) {
+    std::println("{}", token.toString());
+  }
+}
 
 void Lox::error(int line, std::string_view message) {
   report(line, "", message);
