@@ -69,7 +69,7 @@ inline constexpr std::string_view tokenToString(TokenType token) {
       "AND", "CLASS", "ELSE", "FALSE", "FUN", "FOR", "IF", "NIL", "OR", "PRINT",
       "RETURN", "SUPER", "THIS", "TRUE", "VAR", "WHILE",
 
-      "LOX_EOF"};
+      "EOF"};
 
   static_assert(
       std::size(names) ==

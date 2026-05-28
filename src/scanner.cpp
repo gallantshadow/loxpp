@@ -48,7 +48,7 @@ void Scanner::scanToken() {
     addToken(TokenType::LEFT_BRACE);
     break;
   case '}':
-    addToken(TokenType::RIGHT_PAREN);
+    addToken(TokenType::RIGHT_BRACE);
     break;
   case ',':
     addToken(TokenType::COMMA);
@@ -118,7 +118,7 @@ void Scanner::addToken(TokenType token) {
   addToken(token, std::monostate());
 }
 
-void Scanner::addToken(TokenType token, Literal literal) {
+void Scanner::addToken(TokenType token, LiteralType literal) {
   std::string_view text = source.substr(start, current - start);
   tokens.emplace_back(token, text, literal, line);
 }
@@ -145,7 +145,7 @@ void Scanner::stringLiteral() {
     return;
   }
   advance();
-  std::string_view value = source.substr(start, current - start);
+  std::string_view value = source.substr(start + 1, current - start - 2);
   addToken(TokenType::STRING, value);
 }
 
@@ -187,6 +187,6 @@ void Scanner::identifier() {
     token = keywords.at(ident);
   }
   
-  addToken(TokenType::IDENTIFIER);
+  addToken(token);
 }
 

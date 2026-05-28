@@ -17,7 +17,7 @@ private:
   bool isAtEnd() const;
   char advance();
   void addToken(TokenType token);
-  void addToken(TokenType token, Literal literal);
+  void addToken(TokenType token, LiteralType literal);
   bool match(char expected);
   char peek() const;
   void stringLiteral();
