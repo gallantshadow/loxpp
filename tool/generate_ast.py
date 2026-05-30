@@ -4,10 +4,11 @@ import sys
 
 def defineType(os : TextIO, baseName : str, className : str, fieldList : str) :
     fields : str = fieldList.split(", ")
-    os.write(f"class {className} : public {baseName}{{\n")
+    os.write(f"class {className} : public {baseName} {{\n")
     # public
     os.write(f"public:\n")
-    os.write(f"  {className} ({fieldList}) : ")
+    os.write(f"  {className} ({fieldList})\n")
+    os.write(f"    : ")
     if fields:
         name : str = fields[0].split(" ")[1].strip()
         os.write(f"{name}(std::move({name}))")
@@ -16,10 +17,14 @@ def defineType(os : TextIO, baseName : str, className : str, fieldList : str) :
         name : str = field.split(" ")[1].strip()
         os.write(f", {name}(std::move({name}))")
 
-    os.write(f"{{}}\n\n")
-
+    os.write(f" {{}}\n\n")
+    
+    os.write(f"  std::any accept(Visitor& visitor) override {{\n")
+    os.write(f"    return visitor.visit{className}{baseName}(*this);\n")
+    os.write(f"  }}\n")
     for field in fields:
         os.write(f"  const {field};\n")
+
     # public declaration end
 
     os.write("};\n\n")
@@ -27,16 +32,31 @@ def defineType(os : TextIO, baseName : str, className : str, fieldList : str) :
 def defineAst(outputDir : str, baseName: str, types : list[str]) -> None :
     path : str = Path(outputDir) / f"{baseName.lower()}.h"
     with open(path, "w") as os:
+        os.write(f"#ifndef {baseName.upper()}_H\n")
+        os.write(f"#define {baseName.upper()}_H\n\n")
         os.write("#include <any>\n"
                  "#include <memory>\n"
                  "\n"
                  "#include \"token.h\"\n\n")
 
         # forward delcaration
+        for ty in types:
+            className : str = ty.split("|")[0].strip()
+            os.write(f"class {className};\n")
+        os.write("\n")
+        #visitor declaration
+        os.write(f"class Visitor {{\n")
+        os.write(f"public:\n");
+        for ty in types:
+            className : str = ty.split("|")[0].strip()
+            os.write(f"  virtual std::any visit{className}{baseName}(const {className}& {baseName.lower()}) = 0;\n")
+        os.write(f"}};\n\n")
+
 
         os.write(f"class {baseName} {{\n"
                  f"public:\n"
                  f"  virtual ~{baseName}() = default;\n"
+                 f"  virtual std::any accept(Visitor& visitor) = 0;\n"
                  f"}};\n\n")
 
         # process types paramter list
@@ -44,6 +64,8 @@ def defineAst(outputDir : str, baseName: str, types : list[str]) -> None :
             className : str = ty.split("|")[0].strip()
             fields : str = ty.split("|")[1].strip()
             defineType(os, baseName, className, fields)
+
+        os.write("#endif")
 
 
 def main():

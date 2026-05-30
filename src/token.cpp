@@ -6,25 +6,29 @@
 #include "token.h"
 
 // helper type for the visitor
-template<class... Ts>
-struct overloads : Ts... { using Ts::operator()...; };
+template <class... Ts> struct overloads : Ts... {
+  using Ts::operator()...;
+};
+
+std::string literalTypeToString(const LiteralType& literal) {
+  return std::visit(overloads{
+                        [](std::monostate) -> std::string { return "null"; },
+                        [](double d) -> std::string {
+                          auto s = std::format("{}", d);
+                          if (s.find('.') == std::string::npos)
+                            s += ".0";
+                          return s;
+                        },
+                        [](std::string_view sv) -> std::string {
+                          return std::string(sv.begin(), sv.size());
+                        },
+                    },
+                    literal);
+}
+
 
 std::string Token::toString() const {
-
-  const auto visitors = overloads{
-      [](std::monostate) -> std::string { return "null"; },
-      [](double d) -> std::string {
-        auto s = std::format("{}", d);
-        if (s.find('.') == std::string::npos)
-          s += ".0";
-        return s;
-      },
-      [](std::string_view sv) -> std::string {
-        return std::string(sv.begin(), sv.size());
-      },
-  };
-  
-  auto literalStr = std::visit(visitors, literal);
+  auto literalStr = literalTypeToString(literal);
   
   return std::format("{} {} {}", tokenToString(token), lexeme, literalStr) ;
 }

@@ -8,7 +8,8 @@
 #include "token_type.h"
 
 
-using LiteralType =  std::variant<std::monostate, double, std::string_view>;
+using LiteralType = std::variant<std::monostate, double, std::string_view>;
+std::string literalTypeToString(const LiteralType& literal);
 
 class Token {
 public:
@@ -21,7 +22,6 @@ public:
       : token(type), lexeme(lexeme), literal(literal), line(line) {}
 
   std::string toString() const;
-  
 };
 
 #endif

@@ -25,4 +25,5 @@ add_executable(lox
 	lox.cpp
 	token.cpp
 	scanner.cpp
+	ast_printer.cpp
 )
