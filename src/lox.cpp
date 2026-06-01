@@ -1,12 +1,14 @@
-#include "lox.h"
-#include "scanner.h"
-#include "token.h"
-
 #include <vector>
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <print>
+
+#include "ast_printer.h"
+#include "lox.h"
+#include "parser.h"
+#include "scanner.h"
+#include "token.h"
 
 namespace fs = std::filesystem;
 
@@ -43,16 +45,24 @@ void Lox::run(std::string_view source) {
   Scanner scanner{source};
   std::vector<Token> tokens = scanner.scanTokens();
 
-  for (Token &token : tokens) {
-    std::println("{}", token.toString());
-  }
+  Parser parser(tokens);
+  auto expr = parser.parse();
+  
+  std::println("{}", AstPrinter().print(*expr));
+}
+
+void Lox::report(int line, std::string_view where, std::string_view message) {
+  std::println(stderr, "[line {}] Error{}: {}", line, where, message);
+  hadError = true;
 }
 
 void Lox::error(int line, std::string_view message) {
   report(line, "", message);
 }
 
-void Lox::report(int line, std::string_view where, std::string_view message) {
-  std::println(stderr, "[line {}] Error{}: {}", line, where, message);
-  hadError = true;
+void Lox::error(Token token, std::string_view message) {
+  if (token.token == TokenType::LOX_EOF)
+    report(token.line, " at end", message);
+  else
+    report(token.line, std::format(" at '{}'", token.lexeme), message);
 }

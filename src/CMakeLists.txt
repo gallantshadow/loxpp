@@ -22,8 +22,9 @@ add_custom_command(
 add_executable(lox
 	${GENERATED_AST}
 	main.cpp
+	ast_printer.cpp
 	lox.cpp
+	parser.cpp
 	token.cpp
 	scanner.cpp
-	ast_printer.cpp
 )

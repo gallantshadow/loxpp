@@ -1,5 +1,6 @@
 
 #include <sstream>
+
 #include "ast_printer.h"
 
 std::string AstPrinter::print(Expr &expr) {
@@ -26,7 +27,7 @@ std::any AstPrinter::visitGroupingExpr(const Grouping &expr) {
 }
 
 std::any AstPrinter::visitLiteralExpr(const Literal &expr) {
-  return paranthesize(literalTypeToString(expr.value));
+  return literalTypeToString(expr.value);
 }
 
 std::any AstPrinter::visitUnaryExpr(const Unary &expr) {

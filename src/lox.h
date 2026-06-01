@@ -4,11 +4,15 @@
 #include <filesystem>
 #include <string_view>
 
+#include "token.h"
+
 class Lox {
 public:
   int runFile(const std::filesystem::path& path);
   void runPrompt();
   static void error(int line, std::string_view message);
+  static void error(Token line, std::string_view message);
+
 
 private:
   void run(std::string_view source);
