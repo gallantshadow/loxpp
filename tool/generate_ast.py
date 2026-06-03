@@ -19,7 +19,7 @@ def defineType(os : TextIO, baseName : str, className : str, fieldList : str) :
 
     os.write(f" {{}}\n\n")
     
-    os.write(f"  std::any accept(Visitor& visitor) override {{\n")
+    os.write(f"  std::any accept(Visitor& visitor) const override {{\n")
     os.write(f"    return visitor.visit{className}{baseName}(*this);\n")
     os.write(f"  }}\n")
     for field in fields:
@@ -56,7 +56,7 @@ def defineAst(outputDir : str, baseName: str, types : list[str]) -> None :
         os.write(f"class {baseName} {{\n"
                  f"public:\n"
                  f"  virtual ~{baseName}() = default;\n"
-                 f"  virtual std::any accept(Visitor& visitor) = 0;\n"
+                 f"  virtual std::any accept(Visitor& visitor) const = 0;\n"
                  f"}};\n\n")
 
         # process types paramter list

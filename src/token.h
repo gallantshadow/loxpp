@@ -7,6 +7,10 @@
 
 #include "token_type.h"
 
+// helper type for the visitor
+template <class... Ts> struct overloads : Ts... {
+  using Ts::operator()...;
+};
 
 using LiteralType = std::variant<std::monostate, double, std::string_view, bool>;
 std::string literalTypeToString(const LiteralType& literal);

@@ -23,6 +23,7 @@ add_executable(lox
 	${GENERATED_AST}
 	main.cpp
 	ast_printer.cpp
+	interpreter.cpp
 	lox.cpp
 	parser.cpp
 	token.cpp

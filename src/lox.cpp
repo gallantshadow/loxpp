@@ -4,7 +4,6 @@
 #include <iostream>
 #include <print>
 
-#include "ast_printer.h"
 #include "lox.h"
 #include "parser.h"
 #include "scanner.h"
@@ -13,6 +12,8 @@
 namespace fs = std::filesystem;
 
 bool Lox::hadError = false;
+bool Lox::hadRuntimeError = false;
+Interpreter interpreter{};
 
 int Lox::runFile(const fs::path &path) {
   std::ifstream programFile{path};
@@ -26,6 +27,8 @@ int Lox::runFile(const fs::path &path) {
 
   if (hadError)
     return 65;
+  if (hadRuntimeError)
+    return 70;
   
   return 0;
 }
@@ -47,8 +50,11 @@ void Lox::run(std::string_view source) {
 
   Parser parser(tokens);
   auto expr = parser.parse();
-  
-  std::println("{}", AstPrinter().print(*expr));
+
+  if (hadError)
+    return;
+
+  interpreter.interpret(*expr);
 }
 
 void Lox::report(int line, std::string_view where, std::string_view message) {
@@ -65,4 +71,9 @@ void Lox::error(Token token, std::string_view message) {
     report(token.line, " at end", message);
   else
     report(token.line, std::format(" at '{}'", token.lexeme), message);
+}
+
+void Lox::runtimeError(RuntimeError &error) {
+  std::println(stderr, "{}\n[line {}]", error.what(), error.token.line);
+  hadRuntimeError = true;
 }

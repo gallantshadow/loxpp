@@ -5,10 +5,6 @@
 #include "token_type.h"
 #include "token.h"
 
-// helper type for the visitor
-template <class... Ts> struct overloads : Ts... {
-  using Ts::operator()...;
-};
 
 std::string literalTypeToString(const LiteralType& literal) {
   return std::visit(
