@@ -3,7 +3,7 @@
 
 #include "expr.h"
 
-class Interpreter : public Visitor {
+class Interpreter : public ExprVisitor {
 public:
   void interpret(const Expr &expr);
   std::any visitBinaryExpr(const Binary& expr) override;

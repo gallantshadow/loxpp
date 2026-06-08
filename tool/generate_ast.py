@@ -19,7 +19,7 @@ def defineType(os : TextIO, baseName : str, className : str, fieldList : str) :
 
     os.write(f" {{}}\n\n")
     
-    os.write(f"  std::any accept(Visitor& visitor) const override {{\n")
+    os.write(f"  std::any accept({baseName}Visitor& visitor) const override {{\n")
     os.write(f"    return visitor.visit{className}{baseName}(*this);\n")
     os.write(f"  }}\n")
     for field in fields:
@@ -29,15 +29,12 @@ def defineType(os : TextIO, baseName : str, className : str, fieldList : str) :
 
     os.write("};\n\n")
 
-def defineAst(outputDir : str, baseName: str, types : list[str]) -> None :
+def defineAst(outputDir : str, baseName: str, headers: str, types : list[str]) -> None :
     path : str = Path(outputDir) / f"{baseName.lower()}.h"
     with open(path, "w") as os:
         os.write(f"#ifndef {baseName.upper()}_H\n")
         os.write(f"#define {baseName.upper()}_H\n\n")
-        os.write("#include <any>\n"
-                 "#include <memory>\n"
-                 "\n"
-                 "#include \"token.h\"\n\n")
+        os.write(headers)
 
         # forward delcaration
         for ty in types:
@@ -45,7 +42,7 @@ def defineAst(outputDir : str, baseName: str, types : list[str]) -> None :
             os.write(f"class {className};\n")
         os.write("\n")
         #visitor declaration
-        os.write(f"class Visitor {{\n")
+        os.write(f"class {baseName}Visitor {{\n")
         os.write(f"public:\n");
         for ty in types:
             className : str = ty.split("|")[0].strip()
@@ -56,7 +53,7 @@ def defineAst(outputDir : str, baseName: str, types : list[str]) -> None :
         os.write(f"class {baseName} {{\n"
                  f"public:\n"
                  f"  virtual ~{baseName}() = default;\n"
-                 f"  virtual std::any accept(Visitor& visitor) const = 0;\n"
+                 f"  virtual std::any accept({baseName}Visitor& visitor) const = 0;\n"
                  f"}};\n\n")
 
         # process types paramter list
@@ -75,12 +72,23 @@ def main():
 
     outDir : str = sys.argv[1]
 
-    defineAst(outDir, "Expr", [
-        "Binary | std::unique_ptr<Expr> left, Token op, std::unique_ptr<Expr> right",
-        "Grouping | std::unique_ptr<Expr> expression",
-        "Literal | LiteralType value",
-        "Unary | Token op, std::unique_ptr<Expr> right"
-    ])
+    defineAst(outDir,
+              "Expr",
+              "#include <any>\n#include <memory>\n\n#include \"token.h\"\n\n",
+              [
+                  "Binary | std::unique_ptr<Expr> left, Token op, std::unique_ptr<Expr> right",
+                  "Grouping | std::unique_ptr<Expr> expression",
+                  "Literal | LiteralType value",
+                  "Unary | Token op, std::unique_ptr<Expr> right"
+              ])
+    defineAst(outDir,
+              "Stmt",
+              "#include <any>\n#include <memory>\n\n#include \"expr.h\"\n\n",
+              [
+                  "Expression | std::unique_ptr<Expr> expression",
+                  "Print | std::unique_ptr<Expr> expression"
+              ])
+    
 
 if __name__ == "__main__":
     main()

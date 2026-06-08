@@ -15,7 +15,7 @@ add_custom_command(
 	OUTPUT ${GENERATED_AST}
 	COMMAND ${Python3_EXECUTABLE} ${AST_GENERATOR} ${CMAKE_CURRENT_SOURCE_DIR}
 	DEPENDS ${AST_GENERATOR}
-	COMMENT "Generating expr.h"
+	COMMENT "Generating expr.h, stmt.h"
 	VERBATIM
 )
 

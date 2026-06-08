@@ -8,12 +8,13 @@
 #include "parser.h"
 #include "scanner.h"
 #include "token.h"
+#include "interpreter.h"
 
 namespace fs = std::filesystem;
 
 bool Lox::hadError = false;
 bool Lox::hadRuntimeError = false;
-Interpreter interpreter{};
+Interpreter Lox::interpreter{};
 
 int Lox::runFile(const fs::path &path) {
   std::ifstream programFile{path};
