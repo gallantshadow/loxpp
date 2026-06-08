@@ -1,5 +1,5 @@
-
 #include <print>
+#include <vector>
 
 #include "interpreter.h"
 #include "expr.h"
@@ -7,13 +7,25 @@
 #include "runtime_error.h"
 #include "lox.h"
 
-void Interpreter::interpret(const Expr &expr) {
+void Interpreter::interpret(const std::vector<std::unique_ptr<Stmt>> &statements) {
   try {
-    std::any value = evaluate(expr);
-    std::println("{}", stringify(value));
+    for (auto &stmt : statements) {
+      execute(*stmt);
+    }
   } catch (RuntimeError error) {
     Lox::runtimeError(error);
   }
+}
+
+std::any Interpreter::visitPrintStmt(const Print &stmt) {
+  auto value = evaluate(*stmt.expression);
+  std::print("{}\n", stringify(value));
+  return nullptr;
+}
+
+std::any Interpreter::visitExpressionStmt(const Expression &stmt) {
+  evaluate(*stmt.expression);
+  return nullptr;
 }
 
 std::any Interpreter::visitLiteralExpr(const Literal &expr) {
@@ -90,6 +102,10 @@ std::any Interpreter::visitBinaryExpr(const Binary &expr) {
     break;
   }
   return nullptr;
+}
+
+std::any Interpreter::execute(const Stmt &stmt) {
+  return stmt.accept(*this);
 }
 
 std::any Interpreter::evaluate(const Expr &expr) {

@@ -50,12 +50,12 @@ void Lox::run(std::string_view source) {
   std::vector<Token> tokens = scanner.scanTokens();
 
   Parser parser(tokens);
-  auto expr = parser.parse();
+  std::vector<std::unique_ptr<Stmt>> stmt = parser.parse();
 
   if (hadError)
     return;
 
-  interpreter.interpret(*expr);
+  interpreter.interpret(stmt);
 }
 
 void Lox::report(int line, std::string_view where, std::string_view message) {

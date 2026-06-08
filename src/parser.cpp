@@ -1,14 +1,40 @@
+#include <print>
+
 #include "expr.h"
 #include "token.h"
 #include "token_type.h"
 #include "parser.h"
+#include "stmt.h"
 
-std::unique_ptr<Expr> Parser::parse() {
+std::vector<std::unique_ptr<Stmt>> Parser::parse() {
   try {
-    return expression();
+    std::vector<std::unique_ptr<Stmt>> statements{};
+    while (!isAtEnd()) {
+      statements.push_back(statement());
+    }
+    return statements;
   } catch (ParserError error) {
-    return nullptr;
+    std::print("{}\n", error.what());
+    return {};
   }
+}
+
+std::unique_ptr<Stmt> Parser::statement() {
+  if (match(TokenType::PRINT))
+    return printStatement();
+  return expressionStatement();
+}
+
+std::unique_ptr<Stmt> Parser::printStatement() {
+  auto expr = expression();
+  consume(TokenType::SEMICOLON, "Expect ';' after value.");
+  return std::make_unique<Print>(std::move(expr));
+}
+
+std::unique_ptr<Stmt> Parser::expressionStatement() {
+  auto expr = expression();
+  consume(TokenType::SEMICOLON, "Expect ';' after expression.");
+  return std::make_unique<Expression>(std::move(expr));
 }
 
 std::unique_ptr<Expr> Parser::expression() { return equality(); }

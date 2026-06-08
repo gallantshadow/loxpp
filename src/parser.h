@@ -6,6 +6,7 @@
 
 #include "token.h"
 #include "expr.h"
+#include "stmt.h"
 
 
 class ParserError : public std::runtime_error {
@@ -28,9 +29,12 @@ primary        → NUMBER | STRING | "true" | "false" | "nil"
 class Parser {
 public:
   Parser(std::vector<Token> tokens) : tokens(tokens) {}
-  std::unique_ptr<Expr> parse();
-  
+  std::vector<std::unique_ptr<Stmt>> parse();
+
 private:
+  std::unique_ptr<Stmt> statement();
+  std::unique_ptr<Stmt> printStatement();
+  std::unique_ptr<Stmt> expressionStatement();
   std::unique_ptr<Expr> expression();
   std::unique_ptr<Expr> equality();
   std::unique_ptr<Expr> comparison();
