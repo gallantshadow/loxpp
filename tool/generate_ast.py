@@ -76,17 +76,21 @@ def main():
               "Expr",
               "#include <any>\n#include <memory>\n\n#include \"token.h\"\n\n",
               [
-                  "Binary | std::unique_ptr<Expr> left, Token op, std::unique_ptr<Expr> right",
+                  "Assign   | Token name, std::unique_ptr<Expr> value",
+                  "Binary   | std::unique_ptr<Expr> left, Token op, std::unique_ptr<Expr> right",
                   "Grouping | std::unique_ptr<Expr> expression",
-                  "Literal | LiteralType value",
-                  "Unary | Token op, std::unique_ptr<Expr> right"
+                  "Literal  | LiteralType value",
+                  "Unary    | Token op, std::unique_ptr<Expr> right",
+                  "Variable | Token name"
               ])
     defineAst(outDir,
               "Stmt",
-              "#include <any>\n#include <memory>\n\n#include \"expr.h\"\n\n",
+              "#include <any>\n#include <memory>\n#include <vector>\n\n#include \"expr.h\"\n\n",
               [
+                  "Block      | std::vector<std::unique_ptr<Stmt>> statements",
                   "Expression | std::unique_ptr<Expr> expression",
-                  "Print | std::unique_ptr<Expr> expression"
+                  "Print      | std::unique_ptr<Expr> expression",
+                  "Var        | Token name, std::unique_ptr<Expr> initializer" 
               ])
     
 

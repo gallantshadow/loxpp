@@ -1,28 +1,57 @@
-#include <print>
-
 #include "expr.h"
+#include "lox.h"
 #include "token.h"
 #include "token_type.h"
 #include "parser.h"
 #include "stmt.h"
 
 std::vector<std::unique_ptr<Stmt>> Parser::parse() {
+  std::vector<std::unique_ptr<Stmt>> statements{};
+  while (!isAtEnd()) {
+    statements.push_back(declaration());
+  }
+  return statements;
+}
+
+std::unique_ptr<Stmt> Parser::declaration() {
   try {
-    std::vector<std::unique_ptr<Stmt>> statements{};
-    while (!isAtEnd()) {
-      statements.push_back(statement());
-    }
-    return statements;
+    if (match(TokenType::VAR))
+      return varDeclaration();
+    return statement();
   } catch (ParserError error) {
-    std::print("{}\n", error.what());
+    synchronize();
     return {};
   }
+}
+
+std::unique_ptr<Stmt> Parser::varDeclaration() {
+  Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
+  std::unique_ptr<Expr> initializer = nullptr;
+  if (match(TokenType::EQUAL)) {
+    initializer = expression();
+  }
+  consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
+  return make_unique<Var>(name, std::move(initializer));
 }
 
 std::unique_ptr<Stmt> Parser::statement() {
   if (match(TokenType::PRINT))
     return printStatement();
+
+  if (match(TokenType::LEFT_BRACE)) {
+    return std::make_unique<Block>(block());
+  }
+  
   return expressionStatement();
+}
+
+std::vector<std::unique_ptr<Stmt>> Parser::block() {
+  std::vector<std::unique_ptr<Stmt>> statements{};
+  while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+    statements.push_back(declaration());
+  }
+  consume(TokenType::RIGHT_BRACE, "Expect '}' after block.");
+  return statements;
 }
 
 std::unique_ptr<Stmt> Parser::printStatement() {
@@ -37,7 +66,22 @@ std::unique_ptr<Stmt> Parser::expressionStatement() {
   return std::make_unique<Expression>(std::move(expr));
 }
 
-std::unique_ptr<Expr> Parser::expression() { return equality(); }
+std::unique_ptr<Expr> Parser::expression() { return assignment(); }
+
+std::unique_ptr<Expr> Parser::assignment() {
+  auto expr = equality();
+  if (match(TokenType::EQUAL)) {
+    Token equals = previous();
+    auto value = assignment();
+
+    if (auto *var = dynamic_cast<Variable *>(expr.get())) {
+      return std::make_unique<Assign>(var->name, std::move(value));
+    }
+    
+    error(equals, "Invalid assignment target.");
+  }
+  return expr;
+}
 
 std::unique_ptr<Expr> Parser::equality() {
   auto expr = comparison();
@@ -108,6 +152,10 @@ std::unique_ptr<Expr> Parser::primary() {
     consume(TokenType::RIGHT_PAREN, "Expect ')' after expression.");
     return make_unique<Grouping>(std::move(expr));
   }
+
+  if (match(TokenType::IDENTIFIER)) {
+    return std::make_unique<Variable>(previous());
+  }
   throw error(peek(), "Expected expression.");
 }
 
@@ -149,26 +197,27 @@ Token Parser::consume(TokenType type, std::string message) {
 }
 
 ParserError Parser::error(Token token, const std::string msg) {
-    return ParserError(msg);
+  Lox::error(token, msg);
+  return ParserError(msg);
 }
 
 void Parser::synchronize() {
-    advance();
-
-    while (!isAtEnd()) {
-      if (previous().token == TokenType::SEMICOLON) return;
-
-      switch (peek().token) {
-        case TokenType::CLASS:
-        case TokenType::FUN:
-        case TokenType::VAR:
-        case TokenType::FOR:
-        case TokenType::IF:
-        case TokenType::WHILE:
-        case TokenType::PRINT:
-        case TokenType::RETURN:
-          return;
-      }
-      advance();
+  advance();
+  
+  while (!isAtEnd()) {
+    if (previous().token == TokenType::SEMICOLON) return;
+    
+    switch (peek().token) {
+    case TokenType::CLASS:
+    case TokenType::FUN:
+    case TokenType::VAR:
+    case TokenType::FOR:
+    case TokenType::IF:
+    case TokenType::WHILE:
+    case TokenType::PRINT:
+    case TokenType::RETURN:
+      return;
     }
+    advance();
   }
+}

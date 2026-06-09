@@ -15,16 +15,23 @@ public:
 };
 
 /**
-expression     → equality ;
-equality       → comparison ( ( "!=" | "==" ) comparison )* ;
-comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-term           → factor ( ( "-" | "+" ) factor )* ;
-factor         → unary ( ( "/" | "*" ) unary )* ;
-unary          → ( "!" | "-" ) unary
-               | primary ;
-primary        → NUMBER | STRING | "true" | "false" | "nil"
-               | "(" expression ")" ;
- */
+   program        → declaration* EOF;
+   declaration    → varDecl | statement;
+   statement      → exprStmt | printStmt | block;
+   block          → "{" declaration* "}" ;
+   varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
+   exprStmt       → expression ";" ;
+   printStmt      → "print" expression ";" ;
+   expression     → assignment ;
+   assignement    → IDENTIFIER "=" assignment | equality ;
+   equality       → comparison ( ( "!=" | "==" ) comparison )* ;
+   comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+   term           → factor ( ( "-" | "+" ) factor )* ;
+   factor         → unary ( ( "/" | "*" ) unary )* ;
+   unary          → ( "!" | "-" ) unary | primary ;
+   primary        → NUMBER | STRING | "true" | "false" | "nil"
+                  | "(" expression ")" | INDENTIFIER ;
+*/
 
 class Parser {
 public:
@@ -32,10 +39,14 @@ public:
   std::vector<std::unique_ptr<Stmt>> parse();
 
 private:
+  std::unique_ptr<Stmt> declaration();
+  std::unique_ptr<Stmt> varDeclaration();
   std::unique_ptr<Stmt> statement();
+  std::vector<std::unique_ptr<Stmt>> block();
   std::unique_ptr<Stmt> printStatement();
   std::unique_ptr<Stmt> expressionStatement();
   std::unique_ptr<Expr> expression();
+  std::unique_ptr<Expr> assignment();
   std::unique_ptr<Expr> equality();
   std::unique_ptr<Expr> comparison();
   std::unique_ptr<Expr> term();

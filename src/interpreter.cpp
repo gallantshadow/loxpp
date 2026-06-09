@@ -28,6 +28,19 @@ std::any Interpreter::visitExpressionStmt(const Expression &stmt) {
   return nullptr;
 }
 
+std::any Interpreter::visitVarStmt(const Var &stmt) {
+  std::any value = {};
+  if (stmt.initializer != nullptr) {
+    value = evaluate(*stmt.initializer);
+  }
+  environment.define(std::string(stmt.name.lexeme), value);
+  return nullptr;
+}
+
+std::any Interpreter::visitBlockStmt(const Block &stmt) {
+  executeBlock(stmt.statements, Environment{&environment});
+}
+
 std::any Interpreter::visitLiteralExpr(const Literal &expr) {
   return std::visit(
       overloads{
@@ -104,8 +117,22 @@ std::any Interpreter::visitBinaryExpr(const Binary &expr) {
   return nullptr;
 }
 
-std::any Interpreter::execute(const Stmt &stmt) {
-  return stmt.accept(*this);
+std::any Interpreter::visitVariableExpr(const Variable &expr) {
+  return environment.get(expr.name);
+}
+
+std::any Interpreter::visitAssignExpr(const Assign &expr) {
+  std::any value = evaluate(*expr.value);
+  environment.assign(expr.name, value);
+  return value;
+}
+
+void Interpreter::execute(const Stmt &stmt) { stmt.accept(*this); }
+
+void Interpreter::executeBlock(const std::vector<std::unique_ptr<Stmt>> &statements,
+                  Environment newEnvironment) {
+  Environment previous = std::move(environment);
+  environment = std::move(newEnvironment);
 }
 
 std::any Interpreter::evaluate(const Expr &expr) {
