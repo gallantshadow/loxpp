@@ -1,6 +1,7 @@
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
 
+#include <memory>
 #include <vector>
 
 #include "environment.h"
@@ -26,7 +27,8 @@ public:
 
 private:
   void execute(const Stmt &stmt);
-  void executeBlock(const std::vector<std::unique_ptr<Stmt>> & statements, Environment newEnvironment);
+  void executeBlock(const std::vector<std::unique_ptr<Stmt>> &statements,
+                    std::shared_ptr<Environment> newEnvironment);
   std::any evaluate(const Expr &expr);
   bool isTruthy(std::any &object);
   bool isEqual(std::any &a, std::any &b);
@@ -34,7 +36,7 @@ private:
   void checkNumberOperands(Token op, std::any &left, std::any &right);
   std::string stringify(std::any obj);
 
-  Environment environment{};
+  std::shared_ptr<Environment> environment{std::make_shared<Environment>()};
 };
 
 #endif

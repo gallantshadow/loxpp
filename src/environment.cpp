@@ -1,3 +1,4 @@
+#include <print>
 #include <format>
 #include <string>
 #include <unordered_map>
@@ -13,7 +14,9 @@ std::any Environment::get(const Token &name) {
   if (values.contains(std::string(name.lexeme)))
     return values.at(std::string(name.lexeme));
 
-  if(enclosing != nullptr) enclosing->get(name);
+  if (enclosing) {
+    return enclosing->get(name);
+  }
   
   throw RuntimeError{name, std::format("Undefined variable '{}'.", name.lexeme)};
 }
@@ -24,10 +27,21 @@ void Environment::assign(const Token &name, std::any value) {
     return;
   }
 
-  if (enclosing != nullptr) {
+  if (enclosing) {
     enclosing->assign(name, value);
     return;
   }
   
   throw RuntimeError{name, std::format("Undefined variable '{}'.", name.lexeme)};
+}
+
+void Environment::printEnv() {
+  for (auto [a, b] : values) {
+    std::print("'{}'\n", a);
+  }
+  if (!enclosing)
+    return;
+  std::print("{{\n");
+  enclosing->printEnv();
+  std::print("}}\n");
 }

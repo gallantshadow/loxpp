@@ -33,12 +33,13 @@ std::any Interpreter::visitVarStmt(const Var &stmt) {
   if (stmt.initializer != nullptr) {
     value = evaluate(*stmt.initializer);
   }
-  environment.define(std::string(stmt.name.lexeme), value);
+  environment->define(std::string(stmt.name.lexeme), value);
   return nullptr;
 }
 
 std::any Interpreter::visitBlockStmt(const Block &stmt) {
-  executeBlock(stmt.statements, Environment{&environment});
+  executeBlock(stmt.statements, std::make_shared<Environment>(environment));
+  return nullptr;
 }
 
 std::any Interpreter::visitLiteralExpr(const Literal &expr) {
@@ -118,21 +119,32 @@ std::any Interpreter::visitBinaryExpr(const Binary &expr) {
 }
 
 std::any Interpreter::visitVariableExpr(const Variable &expr) {
-  return environment.get(expr.name);
+  return environment->get(expr.name);
 }
 
 std::any Interpreter::visitAssignExpr(const Assign &expr) {
   std::any value = evaluate(*expr.value);
-  environment.assign(expr.name, value);
+  environment->assign(expr.name, value);
   return value;
 }
 
 void Interpreter::execute(const Stmt &stmt) { stmt.accept(*this); }
 
 void Interpreter::executeBlock(const std::vector<std::unique_ptr<Stmt>> &statements,
-                  Environment newEnvironment) {
-  Environment previous = std::move(environment);
+			       std::shared_ptr<Environment> newEnvironment) {
+  struct Restore {
+    std::shared_ptr<Environment> &env;
+    std::shared_ptr<Environment> saved;
+    ~Restore() {
+      env = std::move(saved);
+    }
+  } guard{environment, environment};
+
   environment = std::move(newEnvironment);
+
+  for (auto &stmt : statements) {
+    execute(*stmt);
+  }
 }
 
 std::any Interpreter::evaluate(const Expr &expr) {
