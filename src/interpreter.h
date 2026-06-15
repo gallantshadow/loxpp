@@ -13,6 +13,7 @@ public:
   void interpret(const std::vector<std::unique_ptr<Stmt>> &statments);
   // StmtVisitor
   std::any visitPrintStmt(const Print &stmt) override;
+  std::any visitWhileStmt(const While &stmt) override;
   std::any visitIfStmtStmt(const IfStmt &stmt) override;
   std::any visitExpressionStmt(const Expression &expr) override;
   std::any visitVarStmt(const Var &stmt) override;

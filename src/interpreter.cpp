@@ -23,6 +23,15 @@ std::any Interpreter::visitPrintStmt(const Print &stmt) {
   return nullptr;
 }
 
+std::any Interpreter::visitWhileStmt(const While &stmt) {
+  auto value = evaluate(*stmt.condition);
+  while (isTruthy(value)) {
+    execute(*stmt.body);
+    value = evaluate(*stmt.condition);
+  }
+  return nullptr;
+}
+
 std::any Interpreter::visitIfStmtStmt(const IfStmt &stmt) {
   auto expr = evaluate(*stmt.condition);
   if (isTruthy(expr)) {

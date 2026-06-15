@@ -17,12 +17,15 @@ public:
 /**
    program        → declaration* EOF;
    declaration    → varDecl | statement;
-   statement      → exprStmt | ifStmt | printStmt | block;
+   statement      → exprStmt | forStmt |ifStmt | printStmt | whileStmt | block;
    ifStmt         → "if" "(" expression ")" statement ("else" statement)? ;
    block          → "{" declaration* "}" ;
    varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
    exprStmt       → expression ";" ;
+   forStmt        → "for" "(" ( varDecl | exprStmt | ";") expression? ";"
+                     expression? ")" statement;
    printStmt      → "print" expression ";" ;
+   whileStmt      → "while" "(" expression ")" statement ; 
    expression     → assignment ;
    assignement    → IDENTIFIER "=" assignment | logic_or ;
    logic_or       → logic_and ("or" logic_and)*;
@@ -45,10 +48,12 @@ private:
   std::unique_ptr<Stmt> declaration();
   std::unique_ptr<Stmt> varDeclaration();
   std::unique_ptr<Stmt> statement();
-  std::unique_ptr<Stmt> ifStatement();
-  std::vector<std::unique_ptr<Stmt>> block();
-  std::unique_ptr<Stmt> printStatement();
   std::unique_ptr<Stmt> expressionStatement();
+  std::unique_ptr<Stmt> forStatement();
+  std::unique_ptr<Stmt> ifStatement();
+  std::unique_ptr<Stmt> printStatement();
+  std::unique_ptr<Stmt> whileStatement();
+  std::vector<std::unique_ptr<Stmt>> block();
   std::unique_ptr<Expr> expression();
   std::unique_ptr<Expr> assignment();
   std::unique_ptr<Expr> logicOr();

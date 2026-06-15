@@ -93,6 +93,7 @@ def main():
                   "IfStmt     | std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> thenBranch"
                                 ", std::unique_ptr<Stmt> elseBranch",
                   "Print      | std::unique_ptr<Expr> expression",
+                  "While      | std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> body",
                   "Var        | Token name, std::unique_ptr<Expr> initializer" 
               ])
     
