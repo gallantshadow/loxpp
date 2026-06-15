@@ -80,6 +80,7 @@ def main():
                   "Binary   | std::unique_ptr<Expr> left, Token op, std::unique_ptr<Expr> right",
                   "Grouping | std::unique_ptr<Expr> expression",
                   "Literal  | LiteralType value",
+                  "Logical  | std::unique_ptr<Expr> left, Token op, std::unique_ptr<Expr> right",
                   "Unary    | Token op, std::unique_ptr<Expr> right",
                   "Variable | Token name"
               ])
@@ -89,6 +90,8 @@ def main():
               [
                   "Block      | std::vector<std::unique_ptr<Stmt>> statements",
                   "Expression | std::unique_ptr<Expr> expression",
+                  "IfStmt     | std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> thenBranch"
+                                ", std::unique_ptr<Stmt> elseBranch",
                   "Print      | std::unique_ptr<Expr> expression",
                   "Var        | Token name, std::unique_ptr<Expr> initializer" 
               ])

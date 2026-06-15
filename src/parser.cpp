@@ -41,8 +41,27 @@ std::unique_ptr<Stmt> Parser::statement() {
   if (match(TokenType::LEFT_BRACE)) {
     return std::make_unique<Block>(block());
   }
+
+  if (match(TokenType::IF)){
+    return ifStatement();
+  }
   
   return expressionStatement();
+}
+
+std::unique_ptr<Stmt> Parser::ifStatement() {
+  consume(TokenType::LEFT_PAREN, "Expect '(' after 'if'.");
+  std::unique_ptr<Expr> expr = expression();
+  consume(TokenType::RIGHT_PAREN, "Expect ')' after if condition.");
+
+  std::unique_ptr<Stmt> thenBranch = statement();
+  std::unique_ptr<Stmt> elseBranch = nullptr;
+  if (match(TokenType::ELSE)) {
+    elseBranch = statement();
+  }
+
+  return make_unique<IfStmt>(std::move(expr), std::move(thenBranch),
+                             std::move(elseBranch));
 }
 
 std::vector<std::unique_ptr<Stmt>> Parser::block() {
@@ -69,7 +88,7 @@ std::unique_ptr<Stmt> Parser::expressionStatement() {
 std::unique_ptr<Expr> Parser::expression() { return assignment(); }
 
 std::unique_ptr<Expr> Parser::assignment() {
-  auto expr = equality();
+  auto expr = logicOr();
   if (match(TokenType::EQUAL)) {
     Token equals = previous();
     auto value = assignment();
@@ -82,6 +101,27 @@ std::unique_ptr<Expr> Parser::assignment() {
   }
   return expr;
 }
+
+std::unique_ptr<Expr> Parser::logicOr() {
+  auto expr = logicAnd();
+  while (match(TokenType::OR)) {
+    Token op = previous();
+    auto right = logicAnd();
+    expr = make_unique<Logical>(std::move(expr), op, std::move(right));
+  }
+  return expr;
+}
+
+std::unique_ptr<Expr> Parser::logicAnd() {
+  auto expr = equality();
+  while (match(TokenType::AND)) {
+    Token op = previous();
+    auto right = equality();
+    expr = make_unique<Logical>(std::move(expr), op, std::move(right));
+  }
+  return expr;
+}
+
 
 std::unique_ptr<Expr> Parser::equality() {
   auto expr = comparison();

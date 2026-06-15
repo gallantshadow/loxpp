@@ -23,6 +23,16 @@ std::any Interpreter::visitPrintStmt(const Print &stmt) {
   return nullptr;
 }
 
+std::any Interpreter::visitIfStmtStmt(const IfStmt &stmt) {
+  auto expr = evaluate(*stmt.condition);
+  if (isTruthy(expr)) {
+    execute(*stmt.thenBranch);
+  } else if (stmt.elseBranch) {
+    execute(*stmt.elseBranch);
+  }
+  return nullptr;
+}
+
 std::any Interpreter::visitExpressionStmt(const Expression &stmt) {
   evaluate(*stmt.expression);
   return nullptr;
@@ -50,6 +60,19 @@ std::any Interpreter::visitLiteralExpr(const Literal &expr) {
           [](auto v) -> std::any { return v; },
       },
       expr.value);
+}
+
+std::any Interpreter::visitLogicalExpr(const Logical &expr) {
+  std::any value = evaluate(*expr.left);
+
+  if(expr.op.token == TokenType::OR) {
+    if (isTruthy(value))
+      return value;
+  } else {
+    if (!isTruthy(value))
+      return value;
+  }   
+  return evaluate(*expr.right);
 }
 
 std::any Interpreter::visitGroupingExpr(const Grouping &expr) {
