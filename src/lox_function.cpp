@@ -23,7 +23,7 @@ std::any LoxFunction::call(Interpreter &interpreter,
   } catch (ReturnValue returnValue) {
     return returnValue.value;
   }
-  return nullptr;
+  return {};
 }
 
 std::string LoxFunction::toString() {

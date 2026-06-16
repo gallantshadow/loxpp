@@ -56,7 +56,7 @@ std::any Interpreter::visitPrintStmt(const Print &stmt) {
 }
 
 std::any Interpreter::visitReturnStmt(const Return &stmt) {
-  std::any value = nullptr;
+  std::any value{};
   if (stmt.value)
     value = evaluate(*stmt.value);
   throw ReturnValue{value};
@@ -253,7 +253,7 @@ bool Interpreter::isEqual(std::any &a, std::any &b) {
   if (!a.has_value() && !b.has_value())
     return true;
   if (!a.has_value() || !b.has_value())
-    return true;
+    return false;
   if (a.type() != b.type()) return false; 
 
   if (a.type() == typeid(double))
@@ -268,14 +268,14 @@ bool Interpreter::isEqual(std::any &a, std::any &b) {
 void Interpreter::checkNumberOperand(Token op, std::any &operand) {
   if (operand.type() == typeid(double))
     return;
-  throw RuntimeError(op, "Operand must be number.");
+  throw RuntimeError(op, "Operand must be a number.");
 }
 
 void Interpreter::checkNumberOperands(Token op, std::any &left,
                                      std::any &right) {
   if (left.type() == typeid(double) && right.type() == typeid(double))
     return;
-  throw RuntimeError(op, "Operand must be number.");
+  throw RuntimeError(op, "Operands must be numbers.");
 }
 
 std::string Interpreter::stringify(std::any obj) {

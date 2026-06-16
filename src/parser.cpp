@@ -37,7 +37,7 @@ std::unique_ptr<Stmt> Parser::function(std::string kind) {
   std::vector<Token> parameters{};
   if (!check(TokenType::RIGHT_PAREN)) {
     do {
-      if (parameters.size() > 255) {
+      if (parameters.size() >= 255) {
 	error(peek(), "Can't have more than 255 parameters.");
       }
 
@@ -47,7 +47,7 @@ std::unique_ptr<Stmt> Parser::function(std::string kind) {
   }
   consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
   // parse body
-  consume(TokenType::LEFT_BRACE, std::format("Expect '{{' before {} body", kind));
+  consume(TokenType::LEFT_BRACE, std::format("Expect '{{' before {} body.", kind));
   auto body = block();
   return make_unique<Function>(name, std::move(parameters), std::move(body));
 }
@@ -274,9 +274,9 @@ std::unique_ptr<Expr> Parser::factor() {
 }
 
 std::unique_ptr<Expr> Parser::unary() {
-  while (match(TokenType::BANG, TokenType::MINUS)) {
+  if (match(TokenType::BANG, TokenType::MINUS)) {
     Token op = previous();
-    auto right = primary();
+    auto right = unary();
     return std::make_unique<Unary>(op, std::move(right));
   }
   return call();
@@ -302,7 +302,7 @@ std::unique_ptr<Expr> Parser::finishCall(std::unique_ptr<Expr> callee) {
   if (!check(TokenType::RIGHT_PAREN)) {
     do {
       if (arguments.size() >= 255) {
-        error(peek(), "Can't have more than 255 arguments");
+        error(peek(), "Can't have more than 255 arguments.");
       }
       arguments.push_back(expression());
     } while (match(TokenType::COMMA));
@@ -335,7 +335,7 @@ std::unique_ptr<Expr> Parser::primary() {
   if (match(TokenType::IDENTIFIER)) {
     return std::make_unique<Variable>(previous());
   }
-  throw error(peek(), "Expected expression.");
+  throw error(peek(), "Expect expression.");
 }
 
 // helpers
