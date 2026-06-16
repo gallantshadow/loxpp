@@ -1,11 +1,33 @@
 #include <print>
 #include <vector>
+#include <chrono>
+#include <format>
 
 #include "interpreter.h"
 #include "expr.h"
 #include "token.h"
 #include "runtime_error.h"
 #include "lox.h"
+#include "lox_callable.h"
+#include "lox_function.h"
+#include "return.h"
+
+Interpreter::Interpreter() {
+  class ClockCallable : public LoxCallable {
+    int arity() override { return 0; }
+    std::any call(Interpreter &interpreter, std::vector<std::any> &arguments) override {
+      using namespace std::chrono;
+      return duration<double>(
+			      high_resolution_clock::now().time_since_epoch()).count();
+    }
+    std::string toString() override {
+      return std::format("<native fn>");
+    }
+  };
+  std::shared_ptr<LoxCallable> clock = std::make_shared<ClockCallable>();
+  globals->define("clock", clock);
+  environment = globals;
+}
 
 void Interpreter::interpret(const std::vector<std::unique_ptr<Stmt>> &statements) {
   try {
@@ -15,21 +37,6 @@ void Interpreter::interpret(const std::vector<std::unique_ptr<Stmt>> &statements
   } catch (RuntimeError error) {
     Lox::runtimeError(error);
   }
-}
-
-std::any Interpreter::visitPrintStmt(const Print &stmt) {
-  auto value = evaluate(*stmt.expression);
-  std::print("{}\n", stringify(value));
-  return nullptr;
-}
-
-std::any Interpreter::visitWhileStmt(const While &stmt) {
-  auto value = evaluate(*stmt.condition);
-  while (isTruthy(value)) {
-    execute(*stmt.body);
-    value = evaluate(*stmt.condition);
-  }
-  return nullptr;
 }
 
 std::any Interpreter::visitIfStmtStmt(const IfStmt &stmt) {
@@ -42,8 +49,36 @@ std::any Interpreter::visitIfStmtStmt(const IfStmt &stmt) {
   return nullptr;
 }
 
+std::any Interpreter::visitPrintStmt(const Print &stmt) {
+  auto value = evaluate(*stmt.expression);
+  std::print("{}\n", stringify(value));
+  return nullptr;
+}
+
+std::any Interpreter::visitReturnStmt(const Return &stmt) {
+  std::any value = nullptr;
+  if (stmt.value)
+    value = evaluate(*stmt.value);
+  throw ReturnValue{value};
+}
+
+std::any Interpreter::visitWhileStmt(const While &stmt) {
+  auto value = evaluate(*stmt.condition);
+  while (isTruthy(value)) {
+    execute(*stmt.body);
+    value = evaluate(*stmt.condition);
+  }
+  return nullptr;
+}
+
 std::any Interpreter::visitExpressionStmt(const Expression &stmt) {
   evaluate(*stmt.expression);
+  return nullptr;
+}
+
+std::any Interpreter::visitFunctionStmt(const Function &stmt) {
+  std::shared_ptr<LoxCallable> function = std::make_shared<LoxFunction>(stmt, environment);
+  environment->define(std::string(stmt.name.lexeme), function);
   return nullptr;
 }
 
@@ -150,6 +185,29 @@ std::any Interpreter::visitBinaryExpr(const Binary &expr) {
   return nullptr;
 }
 
+std::any Interpreter::visitCallExpr(const Call &expr) {
+  std::any callee = evaluate(*expr.callee);
+
+  std::vector<std::any> arguments{};
+  for (auto &argument : expr.arguments) {
+    arguments.push_back(evaluate(*argument));
+  }
+
+  if (callee.type() != typeid(std::shared_ptr<LoxCallable>))
+    throw RuntimeError(expr.paren, "Can only call functions and classes.");
+
+
+  auto function = std::any_cast<std::shared_ptr<LoxCallable>>(callee);
+
+  if (arguments.size() != function->arity())
+    throw RuntimeError(expr.paren, "Expected " +
+                                       std::to_string(function->arity()) +
+                                       " arguments but got " +
+                                       std::to_string(arguments.size()) + ".");
+
+  return function->call(*this, arguments);
+}
+
 std::any Interpreter::visitVariableExpr(const Variable &expr) {
   return environment->get(expr.name);
 }
@@ -234,6 +292,9 @@ std::string Interpreter::stringify(std::any obj) {
 
   if (obj.type() == typeid(std::string))
     return std::any_cast<std::string>(obj);
+
+  if (obj.type() == typeid(std::shared_ptr<LoxCallable>))
+    return std::any_cast<std::shared_ptr<LoxCallable>>(obj)->toString();
 
   return "";
 }

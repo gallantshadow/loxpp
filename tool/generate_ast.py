@@ -74,7 +74,7 @@ def main():
 
     defineAst(outDir,
               "Expr",
-              "#include <any>\n#include <memory>\n\n#include \"token.h\"\n\n",
+              "#include <any>\n#include <memory>\n#include <vector>\n\n#include \"token.h\"\n\n",
               [
                   "Assign   | Token name, std::unique_ptr<Expr> value",
                   "Binary   | std::unique_ptr<Expr> left, Token op, std::unique_ptr<Expr> right",
@@ -82,6 +82,8 @@ def main():
                   "Literal  | LiteralType value",
                   "Logical  | std::unique_ptr<Expr> left, Token op, std::unique_ptr<Expr> right",
                   "Unary    | Token op, std::unique_ptr<Expr> right",
+                  "Call     | std::unique_ptr<Expr> callee, Token paren"
+                              ", std::vector<std::unique_ptr<Expr>> arguments", 
                   "Variable | Token name"
               ])
     defineAst(outDir,
@@ -90,9 +92,12 @@ def main():
               [
                   "Block      | std::vector<std::unique_ptr<Stmt>> statements",
                   "Expression | std::unique_ptr<Expr> expression",
+                  "Function   | Token name, std::vector<Token> params"
+                                ", std::vector<std::unique_ptr<Stmt>> body",
                   "IfStmt     | std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> thenBranch"
                                 ", std::unique_ptr<Stmt> elseBranch",
                   "Print      | std::unique_ptr<Expr> expression",
+                  "Return     | Token keyword, std::unique_ptr<Expr> value",
                   "While      | std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> body",
                   "Var        | Token name, std::unique_ptr<Expr> initializer" 
               ])
