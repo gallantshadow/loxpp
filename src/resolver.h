@@ -1,22 +1,27 @@
-#ifndef INTERPRETER_H
-#define INTERPRETER_H
+#ifndef RESOVLER_H
+#define RESOLVER_H
 
 #include <map>
 #include <memory>
+#include <string>
 #include <vector>
 
-#include "environment.h"
 #include "expr.h"
 #include "stmt.h"
 
-class Interpreter : public ExprVisitor, public StmtVisitor {
+class Interpreter;
+
+class Resolver : public ExprVisitor, public StmtVisitor {
 public:
-  Interpreter();
-  void interpret(const std::vector<std::unique_ptr<Stmt>> &statments);
-  void executeBlock(const std::vector<std::unique_ptr<Stmt>> &statements,
-                    std::shared_ptr<Environment> newEnvironment);
-  void resolve(const Expr& expr, int depth);
+  explicit Resolver(Interpreter &interpreter)
+      : interpreter(interpreter) {};
+  void resolve(const std::vector<std::unique_ptr<Stmt>> &statements);
+
 private:
+   enum class FunctionType {
+    NONE,
+    FUNCTION
+  };
   // StmtVisitor
   std::any visitBlockStmt(const Block &stmt) override;
   std::any visitExpressionStmt(const Expression &expr) override;
@@ -37,21 +42,20 @@ private:
   std::any visitUnaryExpr(const Unary &expr) override;
   std::any visitVariableExpr(const Variable &expr) override;
 
-  // helper
-  std::any lookupVariable(const Token &name, const Expr &expr);
-  std::any evaluate(const Expr &expr);
-  void execute(const Stmt &stmt);
-  bool isTruthy(std::any &object);
-  bool isEqual(std::any &a, std::any &b);
-  void checkNumberOperand(Token op, std::any &operand);
-  void checkNumberOperands(Token op, std::any &left, std::any &right);
-  std::string stringify(std::any obj);
+  // helpers
+  void resolve(const Stmt &stmt);
+  void resolve(const Expr &expr);
+  void resolveFunction(const Function& stmt, FunctionType type);
+  void beginScope();
+  void endScope();
+  void declare(const Token &name);
+  void define(const Token &name);
+  void resolveLocal(const Expr &expr, const Token &name);
 
-  std::shared_ptr<Environment> environment{};
-  std::shared_ptr<Environment> globals{std::make_shared<Environment>()};
-  std::map<const Expr*, int> locals{};
 
-  friend class LoxFunction;
+  Interpreter &interpreter;
+  std::vector<std::map<std::string, bool>> scopes;
+  FunctionType currentFunction = FunctionType::NONE;
 };
 
 #endif

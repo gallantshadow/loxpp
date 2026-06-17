@@ -4,11 +4,12 @@
 #include <iostream>
 #include <print>
 
+#include "interpreter.h"
 #include "lox.h"
 #include "parser.h"
+#include "resolver.h"
 #include "scanner.h"
 #include "token.h"
-#include "interpreter.h"
 
 namespace fs = std::filesystem;
 
@@ -35,12 +36,13 @@ int Lox::runFile(const fs::path &path) {
 }
 
 void Lox::runPrompt() {
+  std::string line;
   while (true) {
     std::cout << "|> ";
-    std::string line;
     if (!std::getline(std::cin, line))
       break;
-    run(line);
+    sessionSources.push_back(line);
+    run(sessionSources.back());
     hadError = false;
   }
 }
@@ -48,15 +50,18 @@ void Lox::runPrompt() {
 void Lox::run(std::string_view source) {
   Scanner scanner{source};
   std::vector<Token> tokens = scanner.scanTokens();
-
   Parser parser(tokens);
-  std::vector<std::unique_ptr<Stmt>> stmt = parser.parse();
-
+  std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
   if (hadError)
     return;
-
-  interpreter.interpret(stmt);
+  Resolver resolver{interpreter};
+  resolver.resolve(statements);
+  if (hadError)
+    return;
+  interpreter.interpret(statements);
+  sessionAsts.push_back(std::move(statements));
 }
+
 
 void Lox::report(int line, std::string_view where, std::string_view message) {
   std::println(stderr, "[line {}] Error{}: {}", line, where, message);

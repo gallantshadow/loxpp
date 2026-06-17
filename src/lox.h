@@ -1,6 +1,7 @@
 #ifndef LOX_H
 #define LOX_H
 
+#include <deque>
 #include <filesystem>
 #include <string_view>
 
@@ -18,6 +19,10 @@ public:
 
 private:
   void run(std::string_view source);
+
+  std::deque<std::string> sessionSources;
+  std::deque<std::vector<std::unique_ptr<Stmt>>> sessionAsts;
+  
   static void report(int line, std::string_view where,
                      std::string_view message);
   static bool hadError;

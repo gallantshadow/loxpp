@@ -28,6 +28,7 @@ add_executable(lox
 	lox.cpp
 	lox_function.cpp
 	parser.cpp
+	resolver.cpp
 	token.cpp
 	scanner.cpp
 )

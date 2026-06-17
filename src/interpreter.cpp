@@ -39,6 +39,22 @@ void Interpreter::interpret(const std::vector<std::unique_ptr<Stmt>> &statements
   }
 }
 
+std::any Interpreter::visitBlockStmt(const Block &stmt) {
+  executeBlock(stmt.statements, std::make_shared<Environment>(environment));
+  return nullptr;
+}
+
+std::any Interpreter::visitExpressionStmt(const Expression &stmt) {
+  evaluate(*stmt.expression);
+  return nullptr;
+}
+
+std::any Interpreter::visitFunctionStmt(const Function &stmt) {
+  std::shared_ptr<LoxCallable> function = std::make_shared<LoxFunction>(stmt, environment);
+  environment->define(std::string(stmt.name.lexeme), function);
+  return nullptr;
+}
+
 std::any Interpreter::visitIfStmtStmt(const IfStmt &stmt) {
   auto expr = evaluate(*stmt.condition);
   if (isTruthy(expr)) {
@@ -62,26 +78,6 @@ std::any Interpreter::visitReturnStmt(const Return &stmt) {
   throw ReturnValue{value};
 }
 
-std::any Interpreter::visitWhileStmt(const While &stmt) {
-  auto value = evaluate(*stmt.condition);
-  while (isTruthy(value)) {
-    execute(*stmt.body);
-    value = evaluate(*stmt.condition);
-  }
-  return nullptr;
-}
-
-std::any Interpreter::visitExpressionStmt(const Expression &stmt) {
-  evaluate(*stmt.expression);
-  return nullptr;
-}
-
-std::any Interpreter::visitFunctionStmt(const Function &stmt) {
-  std::shared_ptr<LoxCallable> function = std::make_shared<LoxFunction>(stmt, environment);
-  environment->define(std::string(stmt.name.lexeme), function);
-  return nullptr;
-}
-
 std::any Interpreter::visitVarStmt(const Var &stmt) {
   std::any value = {};
   if (stmt.initializer != nullptr) {
@@ -91,52 +87,19 @@ std::any Interpreter::visitVarStmt(const Var &stmt) {
   return nullptr;
 }
 
-std::any Interpreter::visitBlockStmt(const Block &stmt) {
-  executeBlock(stmt.statements, std::make_shared<Environment>(environment));
-  return nullptr;
-}
-
-std::any Interpreter::visitLiteralExpr(const Literal &expr) {
-  return std::visit(
-      overloads{
-          [](std::monostate) -> std::any { return {}; },
-          [](std::string_view s) -> std::any { return std::string(s); },
-          [](auto v) -> std::any { return v; },
-      },
-      expr.value);
-}
-
-std::any Interpreter::visitLogicalExpr(const Logical &expr) {
-  std::any value = evaluate(*expr.left);
-
-  if(expr.op.token == TokenType::OR) {
-    if (isTruthy(value))
-      return value;
-  } else {
-    if (!isTruthy(value))
-      return value;
-  }   
-  return evaluate(*expr.right);
-}
-
-std::any Interpreter::visitGroupingExpr(const Grouping &expr) {
-  return evaluate(*expr.expression);
-}
-
-std::any Interpreter::visitUnaryExpr(const Unary &expr) {
-  std::any right = evaluate(*expr.right);
-
-  switch (expr.op.token) {
-  case TokenType::BANG:
-    return !isTruthy(right);
-  case TokenType::MINUS:
-    checkNumberOperand(expr.op, right);
-    return -std::any_cast<double>(right);
-  default:
-    // should not be possible this would be parsing error
-    break;
+std::any Interpreter::visitWhileStmt(const While &stmt) {
+  auto value = evaluate(*stmt.condition);
+  while (isTruthy(value)) {
+    execute(*stmt.body);
+    value = evaluate(*stmt.condition);
   }
   return nullptr;
+}
+
+std::any Interpreter::visitAssignExpr(const Assign &expr) {
+  std::any value = evaluate(*expr.value);
+  environment->assign(expr.name, value);
+  return value;
 }
 
 std::any Interpreter::visitBinaryExpr(const Binary &expr) {
@@ -208,14 +171,65 @@ std::any Interpreter::visitCallExpr(const Call &expr) {
   return function->call(*this, arguments);
 }
 
-std::any Interpreter::visitVariableExpr(const Variable &expr) {
-  return environment->get(expr.name);
+std::any Interpreter::visitGroupingExpr(const Grouping &expr) {
+  return evaluate(*expr.expression);
 }
 
-std::any Interpreter::visitAssignExpr(const Assign &expr) {
-  std::any value = evaluate(*expr.value);
-  environment->assign(expr.name, value);
-  return value;
+std::any Interpreter::visitLiteralExpr(const Literal &expr) {
+  return std::visit(
+      overloads{
+          [](std::monostate) -> std::any { return {}; },
+          [](std::string_view s) -> std::any { return std::string(s); },
+          [](auto v) -> std::any { return v; },
+      },
+      expr.value);
+}
+
+std::any Interpreter::visitLogicalExpr(const Logical &expr) {
+  std::any value = evaluate(*expr.left);
+
+  if(expr.op.token == TokenType::OR) {
+    if (isTruthy(value))
+      return value;
+  } else {
+    if (!isTruthy(value))
+      return value;
+  }   
+  return evaluate(*expr.right);
+}
+
+std::any Interpreter::visitUnaryExpr(const Unary &expr) {
+  std::any right = evaluate(*expr.right);
+
+  switch (expr.op.token) {
+  case TokenType::BANG:
+    return !isTruthy(right);
+  case TokenType::MINUS:
+    checkNumberOperand(expr.op, right);
+    return -std::any_cast<double>(right);
+  default:
+    // should not be possible this would be parsing error
+    break;
+  }
+  return nullptr;
+}
+
+std::any Interpreter::visitVariableExpr(const Variable &expr) {
+  return lookupVariable(expr.name, expr);
+}
+
+std::any Interpreter::lookupVariable(const Token &name, const Expr &expr) {
+  auto it = locals.find(&expr);
+  if (it != locals.end()) {
+    int distance = it->second;
+    return environment->getAt(distance, std::string(name.lexeme));
+  } else {
+    return globals->get(name);
+  }
+}
+
+std::any Interpreter::evaluate(const Expr &expr) {
+  return expr.accept(*this);
 }
 
 void Interpreter::execute(const Stmt &stmt) { stmt.accept(*this); }
@@ -237,8 +251,8 @@ void Interpreter::executeBlock(const std::vector<std::unique_ptr<Stmt>> &stateme
   }
 }
 
-std::any Interpreter::evaluate(const Expr &expr) {
-  return expr.accept(*this);
+void Interpreter::resolve(const Expr &expr, int depth) {
+  locals[&expr] = depth;
 }
 
 bool Interpreter::isTruthy(std::any& value) {
